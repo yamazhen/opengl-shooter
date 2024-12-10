@@ -1,4 +1,5 @@
 from OpenGL.GLU import *
+from OpenGL.GL import *
 from math import cos, sin, radians
 import pygame
 
@@ -6,11 +7,12 @@ import pygame
 class Camera:
     def __init__(
         self,
-        ground_min_x=-49.0,
-        ground_max_x=49.0,
-        ground_min_z=-49.0,
-        ground_max_z=49.0,
+        ground_min_x,
+        ground_max_x,
+        ground_min_z,
+        ground_max_z,
     ):
+        self.gun_mesh = None
         self.eye = pygame.math.Vector3(0, 1.0, 5)
         self.up = pygame.math.Vector3(0, 1, 0)
         self.right = pygame.math.Vector3(1, 0, 0)
@@ -22,11 +24,53 @@ class Camera:
         self.mouse_sensitivityY = 0.1
         self.key_sensitivity = 5.0
 
+        # recoil attributes
+        self.gun_recoil = 0.0
+        self.max_recoil = 5.0
+        self.recoil_recovery_speed = 20.0
+
         # Boundary limits
         self.ground_min_x = ground_min_x
         self.ground_max_x = ground_max_x
         self.ground_min_z = ground_min_z
         self.ground_max_z = ground_max_z
+
+    def apply_recoil(self, recoil_amount):
+        self.gun_recoil += recoil_amount
+        if self.gun_recoil > self.max_recoil:
+            self.gun_recoil = self.max_recoil
+
+    def update_recoil(self, delta_time):
+        if self.gun_recoil > 0:
+            self.gun_recoil -= self.recoil_recovery_speed * delta_time
+            if self.gun_recoil < 0:
+                self.gun_recoil = 0
+
+    def attach_gun(self, gun_mesh):
+        self.gun_mesh = gun_mesh
+
+    def draw_gun(self):
+        if self.gun_mesh:
+            glPushMatrix()
+            # Position the gun at the camera's position
+            glTranslatef(self.eye.x, self.eye.y, self.eye.z)
+
+            # Apply the camera's rotation
+            glRotatef(
+                -self.yaw, 0, 1, 0
+            )  # Negative because the yaw affects the camera inversely
+            glRotatef(self.pitch, 1, 0, 0)
+            glRotatef(-90, 0, 1, 0)
+
+            # Apply the gun's recoil
+            glRotatef(self.gun_recoil, 0, 0, -1)
+
+            # Offset the gun to appear in front of the camera
+            glTranslatef(-0.6, -0.2, -0.3)  # Adjust this offset as needed
+
+            # Draw the gun mesh
+            self.gun_mesh.draw()
+            glPopMatrix()
 
     def rotate(self, yaw, pitch):
         self.yaw -= yaw

@@ -6,3 +6,10 @@ made with python on opengl for finals of my third semester
 1) Pygame
 2) PyOpenGL
 3) Numpy
+
+### Features of this game
+1) Bullet tracers
+2) Bullet collision
+3) Random enemy spawn
+4) Random enemy movmement
+5) Border detection

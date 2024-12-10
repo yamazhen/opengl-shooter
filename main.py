@@ -8,6 +8,8 @@ from Crosshair import draw_crosshair
 from LoadTexture import load_texture
 from World import draw_ground
 from Bullet import check_hits_continuous, shoot_bullet
+from LoadMesh import LoadMesh
+from Lighting import Light
 
 pygame.init()
 
@@ -17,6 +19,7 @@ screen_height = 600
 background_color = (0.53, 0.81, 0.92, 1.0)
 drawing_color = (1, 1, 1, 1)
 terrain_texture_id = None
+gun_mesh = LoadMesh("Gun.obj", GL_TRIANGLES)
 
 # Define boundary limits
 GROUND_MIN_X = -49.0
@@ -32,25 +35,7 @@ camera = Camera(
     ground_min_z=GROUND_MIN_Z,
     ground_max_z=GROUND_MAX_Z,
 )
-
-
-def Light():
-    ambientLight = [0.2, 0.2, 0.2, 1.0]
-    diffuseLight = [0.7, 0.7, 0.7, 1.0]
-    specularLight = [1.0, 1.0, 1.0, 1.0]
-    lightPos = [0.0, 10.0, 0.0, 1.0]
-
-    glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight)
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight)
-    glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight)
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPos)
-
-    glEnable(GL_LIGHTING)
-    glEnable(GL_LIGHT0)
-    glEnable(GL_DEPTH_TEST)
-    glShadeModel(GL_SMOOTH)
-    glEnable(GL_COLOR_MATERIAL)
-    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
+camera.attach_gun(gun_mesh)
 
 
 def initialise():
@@ -78,6 +63,7 @@ def display(targets, bullets):
     glClear(int(GL_COLOR_BUFFER_BIT) | int(GL_DEPTH_BUFFER_BIT))
     init_camera()
     camera.apply()
+    camera.draw_gun()
     draw_ground(terrain_texture_id)
     draw_targets(targets)
 
@@ -88,17 +74,22 @@ def display(targets, bullets):
 
 
 def main():
+    initialise()
     clock = pygame.time.Clock()
     done = False
-    initialise()
     pygame.event.set_grab(True)
     pygame.mouse.set_visible(False)
     targets = create_targets()
     bullets = []
+    fire_rate = 2.5
+    fire_interval = 1.0 / fire_rate
+    time_since_last_fire = 0.0
 
     while not done:
         delta_time = clock.tick(60) / 1000.0  # Time in seconds since last frame
         delta_time = min(delta_time, 0.05)  # Clamp to avoid large delta_time spikes
+
+        time_since_last_fire += delta_time
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -110,12 +101,16 @@ def main():
                 if event.key == K_SPACE:
                     pygame.event.set_grab(True)
                     pygame.mouse.set_visible(False)
-            if event.type == MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    shoot_bullet(camera, bullets)
+
+        buttons = pygame.mouse.get_pressed()
+        if buttons[0]:
+            if time_since_last_fire >= fire_interval:
+                shoot_bullet(camera, bullets)
+                time_since_last_fire = 0.0
 
         # Update camera orientation and position
         camera.update(screen.get_width(), screen.get_height(), delta_time)
+        camera.update_recoil(delta_time)
 
         # Update target positions with delta_time
         update_targets(targets, delta_time)

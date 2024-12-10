@@ -111,7 +111,7 @@ def create_targets():
     for _ in range(num_targets):
         initial_x = random.uniform(field_min, field_max)
         initial_z = random.uniform(field_min, field_max)
-        y = -0.5
+        y = -0.4
 
         # Randomize movement parameters for each axis
         amplitude_x = random.uniform(3.0, 10.0)

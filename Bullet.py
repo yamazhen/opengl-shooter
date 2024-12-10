@@ -118,13 +118,18 @@ def check_hits_continuous(targets, bullet):
 
 
 def shoot_bullet(camera, bullets):
-    forward_offset = 0.2
-    downward_offset = -0.2
-    bullet_start_pos = (
+    gun_world_pos = (
         pygame.math.Vector3(camera.eye)
-        + camera.forward * forward_offset
-        + camera.up * downward_offset
+        + (camera.right * 0.6)
+        + (camera.up * -0.15)
+        + (camera.forward * -0.3)
     )
+
+    bullet_start_pos = gun_world_pos
+
     bullet_direction = pygame.math.Vector3(camera.forward).normalize()
+
     bullet = BulletTracer(bullet_start_pos, bullet_direction)
     bullets.append(bullet)
+
+    camera.apply_recoil(5.0)
