@@ -8,8 +8,9 @@ made with python on opengl for finals of my third semester
 3) Numpy
 
 ### Features of this game
-1) Bullet tracers
+1) Bullet tracers (starts from the gun)
 2) Bullet collision
 3) Random enemy spawn
 4) Random enemy movmement
 5) Border detection
+6) Gun model
