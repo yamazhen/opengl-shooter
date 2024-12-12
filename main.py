@@ -13,7 +13,7 @@ from Lighting import Light
 
 pygame.init()
 
-# Project settings
+# project settings
 screen_width = 800
 screen_height = 600
 background_color = (0.53, 0.81, 0.92, 1.0)
@@ -22,7 +22,7 @@ terrain_texture_id = None
 hitbox_scale = 0.5
 gun_mesh = LoadMesh("Gun.obj", GL_TRIANGLES)
 
-# Define boundary limits
+# boundary limits
 GROUND_MIN_X = -49.0
 GROUND_MAX_X = 49.0
 GROUND_MIN_Z = -49.0
@@ -30,13 +30,15 @@ GROUND_MAX_Z = 49.0
 
 screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
 pygame.display.set_caption("Simple 3D Shooter")
+
+# camera init with boundary constraints
 camera = Camera(
     ground_min_x=GROUND_MIN_X,
     ground_max_x=GROUND_MAX_X,
     ground_min_z=GROUND_MIN_Z,
     ground_max_z=GROUND_MAX_Z,
 )
-camera.attach_gun(gun_mesh)
+camera.attach_gun(gun_mesh)  # attach gun mesh to camera
 
 
 def initialise():
@@ -49,8 +51,10 @@ def initialise():
     glLoadIdentity()
     gluPerspective(60, (screen_width / screen_height), 0.1, 500.0)
 
+    # enable lighting
     Light()
 
+    # load terrain texture
     terrain_texture_id = load_texture("terrain_texture.jpeg")
 
 
@@ -60,13 +64,13 @@ def init_camera():
     glViewport(0, 0, screen.get_width(), screen.get_height())
 
 
+# function to draw hitbox for targets
 def draw_hitbox(box_min, box_max):
-    """Draw a wireframe box to visualize the hitbox."""
-    glDisable(GL_LIGHTING)  # Disable lighting for the wireframe
-    glColor3f(0, 1, 0)  # Green color for the hitbox
+    glDisable(GL_LIGHTING)
+    glColor3f(0, 1, 0)
 
     glBegin(GL_LINES)
-    # Bottom face
+    # bottom
     glVertex3f(box_min.x, box_min.y, box_min.z)
     glVertex3f(box_max.x, box_min.y, box_min.z)
 
@@ -79,7 +83,7 @@ def draw_hitbox(box_min, box_max):
     glVertex3f(box_min.x, box_min.y, box_max.z)
     glVertex3f(box_min.x, box_min.y, box_min.z)
 
-    # Top face
+    # top
     glVertex3f(box_min.x, box_max.y, box_min.z)
     glVertex3f(box_max.x, box_max.y, box_min.z)
 
@@ -92,7 +96,7 @@ def draw_hitbox(box_min, box_max):
     glVertex3f(box_min.x, box_max.y, box_max.z)
     glVertex3f(box_min.x, box_max.y, box_min.z)
 
-    # Vertical edges
+    # vertical
     glVertex3f(box_min.x, box_min.y, box_min.z)
     glVertex3f(box_min.x, box_max.y, box_min.z)
 
@@ -106,7 +110,7 @@ def draw_hitbox(box_min, box_max):
     glVertex3f(box_min.x, box_max.y, box_max.z)
     glEnd()
 
-    glEnable(GL_LIGHTING)  # Re-enable lighting
+    glEnable(GL_LIGHTING)
 
 
 def display(targets, bullets, show_hitboxes):
@@ -120,10 +124,11 @@ def display(targets, bullets, show_hitboxes):
     for bullet in bullets:
         bullet.draw()
 
+    # render hitboxes if turned on
     if show_hitboxes:
         for target in targets:
             if target["hit"]:
-                continue  # Skip rendering hitboxes for targets that are hit
+                continue
 
             half_size = (target["size"] / 2) * hitbox_scale
             y_half_size = target["size"] / 2
@@ -152,8 +157,8 @@ def main():
     show_hitboxes = False
 
     while not done:
-        delta_time = clock.tick(60) / 1000.0  # Time in seconds since last frame
-        delta_time = min(delta_time, 0.05)  # Clamp to avoid large delta_time spikes
+        delta_time = clock.tick(60) / 1000.0
+        delta_time = min(delta_time, 0.05)
 
         time_since_last_fire += delta_time
 
@@ -167,23 +172,24 @@ def main():
                 if event.key == K_SPACE:
                     pygame.event.set_grab(True)
                     pygame.mouse.set_visible(False)
-                if event.key == K_h:  # Toggle hitbox rendering
+                if event.key == K_h:
                     show_hitboxes = not show_hitboxes
 
+        # allow for holding down the mouse button to fire
         buttons = pygame.mouse.get_pressed()
         if buttons[0]:
             if time_since_last_fire >= fire_interval:
                 shoot_bullet(camera, bullets)
                 time_since_last_fire = 0.0
 
-        # Update camera orientation and position
         camera.update(screen.get_width(), screen.get_height(), delta_time)
+        # apply recoil to the gun
         camera.update_recoil(delta_time)
 
-        # Update target positions with delta_time
+        # target movement
         update_targets(targets, delta_time)
 
-        # Update bullets and check collisions
+        # update bullet movement and check collision
         bullets_to_remove = []
         for bullet in bullets:
             bullet.update(delta_time)
@@ -192,15 +198,15 @@ def main():
             elif not bullet.is_alive():
                 bullets_to_remove.append(bullet)
 
-        # Draw everything
         display(targets, bullets, show_hitboxes)
 
-        # Remove bullets after drawing
+        # remove bullets that are no longer needed
         for bullet in bullets_to_remove:
             bullets.remove(bullet)
 
         pygame.display.flip()
 
+        # check if all targets are killed
         if all(target["hit"] for target in targets):
             print("All targets eliminated! You win!")
             pygame.quit()

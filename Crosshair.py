@@ -6,6 +6,7 @@ def draw_crosshair(screen_width, screen_height):
     glMatrixMode(GL_PROJECTION)
     glPushMatrix()
     glLoadIdentity()
+    # change to 2d projection
     gluOrtho2D(0, screen_width, 0, screen_height)
 
     glMatrixMode(GL_MODELVIEW)

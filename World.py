@@ -5,6 +5,7 @@ def draw_ground(terrain_texture_id):
     glEnable(GL_TEXTURE_2D)
     glBindTexture(GL_TEXTURE_2D, terrain_texture_id)
 
+    # repeat the texture 50 times on the ground
     repeat_factor = 50
 
     glPushMatrix()

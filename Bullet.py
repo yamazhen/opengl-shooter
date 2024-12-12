@@ -8,9 +8,7 @@ from OpenGL.GLU import *
 class BulletTracer:
     def __init__(self, start_pos, direction):
         self.position = pygame.math.Vector3(start_pos)
-        self.previous_position = pygame.math.Vector3(
-            start_pos
-        )  # Store the previous position
+        self.previous_position = pygame.math.Vector3(start_pos)
         self.direction = direction.normalize()
         self.speed = 150.0
         self.lifetime = 10.0
@@ -21,43 +19,41 @@ class BulletTracer:
         return (time.time() - self.start_time) < self.lifetime
 
     def update(self, delta_time):
-        self.previous_position = pygame.math.Vector3(
-            self.position
-        )  # Update previous position
+        self.previous_position = pygame.math.Vector3(self.position)
         self.position += self.direction * self.speed * delta_time
 
     def draw(self):
-        # Calculate the end position of the tracer
-        tracer_length = 1.0  # Length of the tracer
+        tracer_length = 1.0
 
-        # Disable lighting for consistent tracer appearance
+        # set yellow and disable lighting
         glDisable(GL_LIGHTING)
-        glColor3f(1.0, 1.0, 0.0)  # Set tracer color to yellow
+        glColor3f(1.0, 1.0, 0.0)
 
-        # Draw a 3D line cylinder (main body of the tracer)
         glPushMatrix()
-        # Move to the bullet's starting position
+        # move to bullet start position
         glTranslatef(*self.position)
 
-        # Calculate rotation to align the tracer with the direction
-        default_direction = pygame.math.Vector3(0, 0, -1)  # Default OpenGL forward
+        # calculate rotation to align the tracer with the direction
+        default_direction = pygame.math.Vector3(0, 0, -1)
         rotation_axis = default_direction.cross(self.direction).normalize()
         rotation_angle = np.degrees(np.arccos(default_direction.dot(self.direction)))
 
         if rotation_axis.length() > 0:
             glRotatef(rotation_angle, rotation_axis.x, rotation_axis.y, rotation_axis.z)
 
-        # Draw the cylinder
+        # draw the cylinder
         quadric = gluNewQuadric()
         gluCylinder(quadric, self.size / 4, self.size / 4, tracer_length, 16, 16)
 
-        # Add hemispherical caps
+        # add caps to make it look like a bullet
         glPushMatrix()
         gluSphere(quadric, self.size / 4, 16, 16)
         glPopMatrix()
 
         glPushMatrix()
-        glTranslatef(0, 0, tracer_length)  # Move to the end of the cylinder
+
+        # move to the end of the bullet and add another cap
+        glTranslatef(0, 0, tracer_length)
         gluSphere(quadric, self.size / 4, 16, 16)
         glPopMatrix()
 
@@ -67,28 +63,38 @@ class BulletTracer:
 
 
 def line_aabb_intersection(p1, p2, box_min, box_max):
+    # calculate direction vector of the line
     direction = p2 - p1
+
+    # initialize t_min (entry) and t_max (exit) for the line
     t_min = 0.0
     t_max = 1.0
 
+    # check intersection along each axis (x,y,z)
     for i in range(3):
+        # check if line is parallel to the plane
         if abs(direction[i]) < 1e-8:
             if p1[i] < box_min[i] or p1[i] > box_max[i]:
                 return False
         else:
+            # calculate intersect points with the hitbox
             ood = 1.0 / direction[i]
-            t1 = (box_min[i] - p1[i]) * ood
-            t2 = (box_max[i] - p1[i]) * ood
+            t1 = (box_min[i] - p1[i]) * ood  # entry
+            t2 = (box_max[i] - p1[i]) * ood  # exit
 
+            # make sure t1 is the entry point
             t_enter = min(t1, t2)
             t_exit = max(t1, t2)
 
+            # update t_min and t_max
             t_min = max(t_min, t_enter)
             t_max = min(t_max, t_exit)
 
+            # if entry is after exit then no intersection
             if t_min > t_max:
                 return False
 
+    # otherwise intersection occurred
     return True
 
 
@@ -97,7 +103,7 @@ def check_hits_continuous(targets, bullet, hitbox_scale):
         if target["hit"]:
             continue
 
-        # Define the bounding box for the cube
+        # define hitbox by creating a box around the target's hitbox position
         half_size = (target["size"] / 2) * hitbox_scale
         y_half_size = target["size"] / 2
         box_min = target["hitbox_position"] - pygame.math.Vector3(
@@ -107,15 +113,15 @@ def check_hits_continuous(targets, bullet, hitbox_scale):
             half_size, y_half_size, half_size
         )
 
-        # Check if the bullet's path intersects the target's bounding box
+        # check if the bullet's path intersects the target's bounding box
         if line_aabb_intersection(
             bullet.previous_position, bullet.position, box_min, box_max
         ):
             target["hit"] = True
             print(f"Target at {target['position']} hit!")
-            return True  # Bullet hit a target
+            return True
 
-    return False  # No collision detected
+    return False
 
 
 def shoot_bullet(camera, bullets):
