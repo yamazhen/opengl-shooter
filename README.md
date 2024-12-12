@@ -14,3 +14,4 @@ made with python on opengl for finals of my third semester
 4) Random enemy movmement
 5) Border detection
 6) Gun model
+7) Accurate hitbox detection
