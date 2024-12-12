@@ -19,6 +19,7 @@ screen_height = 600
 background_color = (0.53, 0.81, 0.92, 1.0)
 drawing_color = (1, 1, 1, 1)
 terrain_texture_id = None
+hitbox_scale = 0.5
 gun_mesh = LoadMesh("Gun.obj", GL_TRIANGLES)
 
 # Define boundary limits
@@ -59,7 +60,56 @@ def init_camera():
     glViewport(0, 0, screen.get_width(), screen.get_height())
 
 
-def display(targets, bullets):
+def draw_hitbox(box_min, box_max):
+    """Draw a wireframe box to visualize the hitbox."""
+    glDisable(GL_LIGHTING)  # Disable lighting for the wireframe
+    glColor3f(0, 1, 0)  # Green color for the hitbox
+
+    glBegin(GL_LINES)
+    # Bottom face
+    glVertex3f(box_min.x, box_min.y, box_min.z)
+    glVertex3f(box_max.x, box_min.y, box_min.z)
+
+    glVertex3f(box_max.x, box_min.y, box_min.z)
+    glVertex3f(box_max.x, box_min.y, box_max.z)
+
+    glVertex3f(box_max.x, box_min.y, box_max.z)
+    glVertex3f(box_min.x, box_min.y, box_max.z)
+
+    glVertex3f(box_min.x, box_min.y, box_max.z)
+    glVertex3f(box_min.x, box_min.y, box_min.z)
+
+    # Top face
+    glVertex3f(box_min.x, box_max.y, box_min.z)
+    glVertex3f(box_max.x, box_max.y, box_min.z)
+
+    glVertex3f(box_max.x, box_max.y, box_min.z)
+    glVertex3f(box_max.x, box_max.y, box_max.z)
+
+    glVertex3f(box_max.x, box_max.y, box_max.z)
+    glVertex3f(box_min.x, box_max.y, box_max.z)
+
+    glVertex3f(box_min.x, box_max.y, box_max.z)
+    glVertex3f(box_min.x, box_max.y, box_min.z)
+
+    # Vertical edges
+    glVertex3f(box_min.x, box_min.y, box_min.z)
+    glVertex3f(box_min.x, box_max.y, box_min.z)
+
+    glVertex3f(box_max.x, box_min.y, box_min.z)
+    glVertex3f(box_max.x, box_max.y, box_min.z)
+
+    glVertex3f(box_max.x, box_min.y, box_max.z)
+    glVertex3f(box_max.x, box_max.y, box_max.z)
+
+    glVertex3f(box_min.x, box_min.y, box_max.z)
+    glVertex3f(box_min.x, box_max.y, box_max.z)
+    glEnd()
+
+    glEnable(GL_LIGHTING)  # Re-enable lighting
+
+
+def display(targets, bullets, show_hitboxes):
     glClear(int(GL_COLOR_BUFFER_BIT) | int(GL_DEPTH_BUFFER_BIT))
     init_camera()
     camera.apply()
@@ -69,6 +119,21 @@ def display(targets, bullets):
 
     for bullet in bullets:
         bullet.draw()
+
+    if show_hitboxes:
+        for target in targets:
+            if target["hit"]:
+                continue  # Skip rendering hitboxes for targets that are hit
+
+            half_size = (target["size"] / 2) * hitbox_scale
+            y_half_size = target["size"] / 2
+            box_min = target["hitbox_position"] - pygame.math.Vector3(
+                half_size, y_half_size, half_size
+            )
+            box_max = target["hitbox_position"] + pygame.math.Vector3(
+                half_size, y_half_size, half_size
+            )
+            draw_hitbox(box_min, box_max)
 
     draw_crosshair(screen.get_width(), screen.get_height())
 
@@ -84,6 +149,7 @@ def main():
     fire_rate = 2.5
     fire_interval = 1.0 / fire_rate
     time_since_last_fire = 0.0
+    show_hitboxes = False
 
     while not done:
         delta_time = clock.tick(60) / 1000.0  # Time in seconds since last frame
@@ -101,6 +167,8 @@ def main():
                 if event.key == K_SPACE:
                     pygame.event.set_grab(True)
                     pygame.mouse.set_visible(False)
+                if event.key == K_h:  # Toggle hitbox rendering
+                    show_hitboxes = not show_hitboxes
 
         buttons = pygame.mouse.get_pressed()
         if buttons[0]:
@@ -119,13 +187,13 @@ def main():
         bullets_to_remove = []
         for bullet in bullets:
             bullet.update(delta_time)
-            if check_hits_continuous(targets, bullet):
+            if check_hits_continuous(targets, bullet, hitbox_scale):
                 bullets_to_remove.append(bullet)
             elif not bullet.is_alive():
                 bullets_to_remove.append(bullet)
 
         # Draw everything
-        display(targets, bullets)
+        display(targets, bullets, show_hitboxes)
 
         # Remove bullets after drawing
         for bullet in bullets_to_remove:

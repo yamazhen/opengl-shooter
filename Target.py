@@ -98,8 +98,13 @@ def update_targets(targets, delta_time):
             target["frequency_z"] * target["elapsed_time"] + target["phase_z"]
         )
 
+        # Update visual position
         target["position"].x = new_x
         target["position"].z = new_z
+
+        # Update hitbox position (align y with the visual center, e.g., `y = 0`)
+        target["hitbox_position"].x = new_x
+        target["hitbox_position"].z = new_z
 
 
 def create_targets():
@@ -111,7 +116,7 @@ def create_targets():
     for _ in range(num_targets):
         initial_x = random.uniform(field_min, field_max)
         initial_z = random.uniform(field_min, field_max)
-        y = -0.4
+        y = -0.5
 
         # Randomize movement parameters for each axis
         amplitude_x = random.uniform(3.0, 10.0)
@@ -123,6 +128,7 @@ def create_targets():
 
         target = {
             "position": pygame.math.Vector3(initial_x, y, initial_z),
+            "hitbox_position": pygame.math.Vector3(initial_x, 0, initial_z),
             "hit": False,
             "size": 2.0,
             "initial_x": initial_x,

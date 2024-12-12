@@ -92,18 +92,19 @@ def line_aabb_intersection(p1, p2, box_min, box_max):
     return True
 
 
-def check_hits_continuous(targets, bullet):
+def check_hits_continuous(targets, bullet, hitbox_scale):
     for target in targets:
         if target["hit"]:
             continue
 
         # Define the bounding box for the cube
-        half_size = target["size"] / 2
-        box_min = target["position"] - pygame.math.Vector3(
-            half_size, half_size, half_size
+        half_size = (target["size"] / 2) * hitbox_scale
+        y_half_size = target["size"] / 2
+        box_min = target["hitbox_position"] - pygame.math.Vector3(
+            half_size, y_half_size, half_size
         )
-        box_max = target["position"] + pygame.math.Vector3(
-            half_size, half_size, half_size
+        box_max = target["hitbox_position"] + pygame.math.Vector3(
+            half_size, y_half_size, half_size
         )
 
         # Check if the bullet's path intersects the target's bounding box
